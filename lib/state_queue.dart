@@ -9,7 +9,7 @@ typedef StateQueueEvent<T> = FutureOr<T> Function(
   StateQueue<T> queue,
 );
 typedef StateQueueCreate<T> = T Function();
-typedef StateQueueListener<T> = void Function(T state);
+typedef StateQueueOnState<T> = void Function(T state);
 typedef StateQueueViewBuilder<T> = Widget Function(
   BuildContext context,
   StateQueue<T> queue,
@@ -17,13 +17,13 @@ typedef StateQueueViewBuilder<T> = Widget Function(
 
 class StateQueue<T> {
   late final Queue<StateQueueEvent<T>> _queue;
-  late final List<StateQueueListener<T>> _listeners;
+  late final List<StateQueueOnState<T>> _listeners;
   late T _state;
   late Future<void>? _processor;
 
   StateQueue(StateQueueCreate<T> create) {
     _queue = Queue<StateQueueEvent<T>>();
-    _listeners = <StateQueueListener<T>>[];
+    _listeners = <StateQueueOnState<T>>[];
     _state = create();
     _processor = null;
   }
@@ -57,13 +57,13 @@ class StateQueue<T> {
     });
   }
 
-  void listen(StateQueueListener<T> listener) {
+  void listen(StateQueueOnState<T> listener) {
     if (_listeners.contains(listener)) return;
     _listeners.add(listener);
     listener(_state);
   }
 
-  void unlisten(StateQueueListener<T> listener) {
+  void unlisten(StateQueueOnState<T> listener) {
     _listeners.remove(listener);
   }
 
@@ -74,14 +74,14 @@ class StateQueue<T> {
   }
 
   Widget view({
-    void Function()? init,
-    void Function()? dispose,
+    StateQueueOnState<T>? init,
+    StateQueueOnState<T>? dispose,
     required StateQueueViewBuilder<T> builder,
   }) {
     return _StateQueueView<T>(
       queue: this,
-      init: init ?? () {},
-      dispose: dispose ?? () {},
+      init: init ?? (state) {},
+      dispose: dispose ?? (state) {},
       builder: builder,
     );
   }
@@ -89,8 +89,8 @@ class StateQueue<T> {
 
 class _StateQueueView<T> extends StatefulWidget {
   final StateQueue<T> queue;
-  final void Function() init;
-  final void Function() dispose;
+  final StateQueueOnState<T> init;
+  final StateQueueOnState<T> dispose;
   final StateQueueViewBuilder<T> builder;
 
   const _StateQueueView({
@@ -115,12 +115,12 @@ class _StateQueueViewState<T> extends State<_StateQueueView<T>> {
   @override
   void initState() {
     super.initState();
-    widget.init();
+    widget.init(widget.queue.state);
   }
 
   @override
   void dispose() {
-    widget.dispose();
+    widget.dispose(widget.queue.state);
     widget.queue.unlisten(onState);
     super.dispose();
   }

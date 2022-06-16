@@ -1,7 +1,7 @@
 name: state_queue
 description: A new Flutter package project.
-version: 0.0.1
-homepage:
+version: 1.0.0+1
+homepage: https://github.com/jmsrsd/state_queue
 
 environment:
   sdk: ">=2.17.3 <3.0.0"
